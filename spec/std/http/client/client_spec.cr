@@ -10,7 +10,7 @@ private class TestServer < TCPServer
       spawn do
         io = server.accept
         sleep read_time
-        response = HTTP::Client::Response.new(200, headers: HTTP::Headers{"Content-Type" => "text/plain"}, body: "OK")
+        response = HTTP::Client::Response.new(301, headers: HTTP::Headers{"Content-Type" => "text/plain"}, body: "OK")
         response.to_io(io)
         io.flush
       end
@@ -225,6 +225,21 @@ module HTTP
         request = HTTP::Request.new("GET", "/", HTTP::Headers{"Host" => "other.example.com"})
         client.set_defaults(request)
         request.host.should eq "other.example.com"
+      end
+    end
+
+    describe "follows redirects from http://www to https://" do
+      it "using #follow" do
+        resp_get = HTTP::Client.follow("http://www.github.com/").get
+        resp_get.headers["Location"]?.should be_nil
+        resp_get.headers["Host"]?.should be_nil
+        resp_get.headers["Server"]?.should eq "GitHub.com"
+      end
+      it "using #new" do
+        resp_get = HTTP::Client.new("www.github.com", 80, false, 4).get
+        resp_get.headers["Location"]?.should be_nil
+        resp_get.headers["Host"]?.should be_nil
+        resp_get.headers["Server"]?.should eq "GitHub.com"
       end
     end
   end
