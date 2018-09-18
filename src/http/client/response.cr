@@ -131,7 +131,7 @@ class HTTP::Client::Response
       raise "Invalid HTTP status code: #{pieces[1]}"
     end
 
-    status_message = pieces[2]? ? pieces[2].chomp : ""
+    status_message = (piece_2 = pieces[2]?) ? piece_2.chomp : ""
 
     body_type = HTTP::BodyType::OnDemand
     body_type = HTTP::BodyType::Mandatory if mandatory_body?(status_code)
