@@ -6,7 +6,7 @@ module Crystal
     class Error < LocationlessException
     end
 
-    def self.default_path
+    def self.default_path : String
       ENV["CRYSTAL_PATH"]? || Crystal::Config.path
     end
 

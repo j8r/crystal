@@ -1,6 +1,7 @@
 require "./spec_helper"
 
 describe "Backtrace" do
+  crystal_bin_path = File.exists?("./bin/crystal") ? "./bin/crystal" : Process.find_executable "crystal"
   it "prints file line:colunm" do
     with_tempfile("compiler_spec_output") do |path|
       sample = datapath("backtrace_sample")
@@ -11,7 +12,7 @@ describe "Backtrace" do
       current_dir += File::SEPARATOR unless current_dir.ends_with?(File::SEPARATOR)
       sample = sample.lchop(current_dir)
 
-      `bin/crystal build --debug #{sample.inspect} -o #{path.inspect}`
+      `#{crystal_bin_path} build --debug #{sample.inspect} -o #{path.inspect}`
       File.exists?(path).should be_true
 
       {% if flag?(:darwin) %}
@@ -38,7 +39,7 @@ describe "Backtrace" do
     with_tempfile("compiler_spec_output") do |path|
       sample = datapath("exception_backtrace_sample")
 
-      `bin/crystal build --debug #{sample.inspect} -o #{path.inspect}`
+      `#{crystal_bin_path} build --debug #{sample.inspect} -o #{path.inspect}`
       File.exists?(path).should be_true
 
       output, error = {IO::Memory.new, IO::Memory.new}.tap do |outio, errio|
@@ -54,7 +55,7 @@ describe "Backtrace" do
     with_tempfile("compiler_spec_output") do |path|
       sample = datapath("crash_backtrace_sample")
 
-      `bin/crystal build --debug #{sample.inspect} -o #{path.inspect}`
+      `#{crystal_bin_path} build --debug #{sample.inspect} -o #{path.inspect}`
       File.exists?(path).should be_true
 
       output, error = {IO::Memory.new, IO::Memory.new}.tap do |outio, errio|

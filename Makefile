@@ -13,8 +13,6 @@
 ## Run all specs in verbose mode
 ##   $ make spec verbose=1
 
-LLVM_CONFIG ?= ## llvm-config command path to use
-
 release ?=      ## Compile in release mode
 stats ?=        ## Enable statistics output
 progress ?=     ## Enable progress output
@@ -25,6 +23,10 @@ junit_output ?= ## Directory to output junit results
 static ?=       ## Enable static linking
 
 O := .build
+CRYSTAL_ROOT := ./
+CRYSTAL_BINARY_BUILD_PATH := $(CRYSTAL_ROOT)bin/crystal
+CRYSTAL_BINARY ?= $(shell [ -f $(CRYSTAL_BINARY_BUILD_PATH) ] && printf -- "$(CRYSTAL_BINARY_BUILD_PATH)" || which crystal)
+
 SOURCES := $(shell find src -name '*.cr')
 SPEC_SOURCES := $(shell find spec -name '*.cr')
 override FLAGS += -D preview_overflow -D compiler_rt $(if $(release),--release )$(if $(stats),--stats )$(if $(progress),--progress )$(if $(threads),--threads $(threads) )$(if $(debug),-d )$(if $(static),--static )$(if $(LDFLAGS),--link-flags="$(LDFLAGS)" )
@@ -35,6 +37,8 @@ EXPORTS := \
   CRYSTAL_CONFIG_LIBRARY_PATH="$(shell crystal env CRYSTAL_LIBRARY_PATH)" \
   CRYSTAL_CONFIG_BUILD_COMMIT="$(CRYSTAL_CONFIG_BUILD_COMMIT)"
 SHELL = sh
+
+LLVM_CONFIG ?= ## llvm-config command path to use
 LLVM_CONFIG_FINDER := \
   [ -n "$(LLVM_CONFIG)" ] && command -v "$(LLVM_CONFIG)" || \
   command -v llvm-config-6.0 || command -v llvm-config60 || \
@@ -58,10 +62,14 @@ DEPS = $(LLVM_EXT_OBJ) $(LIB_CRYSTAL_TARGET)
 CFLAGS += -fPIC $(if $(debug),-g -O0)
 CXXFLAGS += $(if $(debug),-g -O0)
 
-ifeq (${LLVM_CONFIG},)
+ifeq ($(LLVM_CONFIG),)
   $(error Could not locate llvm-config, make sure it is installed and in your PATH, or set LLVM_CONFIG)
 else
-  $(shell echo $(shell printf '\033[33m')Using $(LLVM_CONFIG) [version=$(shell $(LLVM_CONFIG) --version)]$(shell printf '\033[0m') >&2)
+  ifeq ($(strip $(CRYSTAL_BINARY)),)
+    $(error crystal binary not found)
+  else
+    $(shell echo $(shell printf '\033[33m')Using $(LLVM_CONFIG) $(CRYSTAL_BINARY)[version=$(shell $(LLVM_CONFIG) --version)]$(shell printf '\033[0m') >&2)
+  endif
 endif
 
 .PHONY: all
@@ -98,10 +106,10 @@ compiler_spec: $(O)/compiler_spec ## Run compiler specs
 
 .PHONY: docs
 docs: ## Generate standard library documentation
-	$(BUILD_PATH) ./bin/crystal docs -b https://crystal-lang.org/api/latest src/docs_main.cr
+	$(BUILD_PATH) $(CRYSTAL_BINARY) docs -b https://crystal-lang.org/api/latest src/docs_main.cr
 
 .PHONY: crystal
-crystal: $(O)/crystal ## Build the compiler
+crystal: $(CRYSTAL_BINARY_BUILD_PATH) ## Build the compiler
 
 .PHONY: deps llvm_ext libcrystal
 deps: $(DEPS) ## Build dependencies
@@ -111,19 +119,19 @@ libcrystal: $(LIB_CRYSTAL_TARGET)
 
 $(O)/all_spec: $(DEPS) $(SOURCES) $(SPEC_SOURCES)
 	@mkdir -p $(O)
-	$(BUILD_PATH) ./bin/crystal build $(FLAGS) -o $@ spec/all_spec.cr
+	$(BUILD_PATH) $(CRYSTAL_BINARY) build $(FLAGS) -o $@ spec/all_spec.cr
 
 $(O)/std_spec: $(DEPS) $(SOURCES) $(SPEC_SOURCES)
 	@mkdir -p $(O)
-	$(BUILD_PATH) ./bin/crystal build $(FLAGS) -o $@ spec/std_spec.cr
+	$(BUILD_PATH) $(CRYSTAL_BINARY) build $(FLAGS) -o $@ spec/std_spec.cr
 
 $(O)/compiler_spec: $(DEPS) $(SOURCES) $(SPEC_SOURCES)
 	@mkdir -p $(O)
-	$(BUILD_PATH) ./bin/crystal build $(FLAGS) -o $@ spec/compiler_spec.cr
+	$(BUILD_PATH) $(CRYSTAL_BINARY) build $(FLAGS) -o $@ spec/compiler_spec.cr
 
-$(O)/crystal: $(DEPS) $(SOURCES)
+$(CRYSTAL_BINARY_BUILD_PATH): $(DEPS) $(SOURCES)
 	@mkdir -p $(O)
-	$(BUILD_PATH) $(EXPORTS) ./bin/crystal build $(FLAGS) -o $@ src/compiler/crystal.cr -D without_openssl -D without_zlib
+	$(BUILD_PATH) $(EXPORTS) $(CRYSTAL_BINARY) build $(FLAGS) -o $@ src/compiler/crystal.cr -D without_openssl -D without_zlib
 
 $(LLVM_EXT_OBJ): $(LLVM_EXT_DIR)/llvm_ext.cc
 	$(CXX) -c $(CXXFLAGS) -o $@ $< $(shell $(LLVM_CONFIG) --cxxflags)
@@ -140,3 +148,4 @@ clean: clean_crystal ## Clean up built directories and files
 clean_crystal: ## Clean up crystal built files
 	rm -rf $(O)
 	rm -rf ./docs
+	rm -f $(CRYSTAL_BINARY_BUILD_PATH)
