@@ -22,6 +22,9 @@ verbose ?=      ## Run specs in verbose mode
 junit_output ?= ## Directory to output junit results
 static ?=       ## Enable static linking
 
+
+# Temporary, can be removed after first compilation
+export CRYSTAL_PATH=$(PWD)/src
 O := .build
 CRYSTAL_ROOT := ./
 CRYSTAL_BINARY_BUILD_PATH := $(CRYSTAL_ROOT)bin/crystal
@@ -33,7 +36,6 @@ override FLAGS += -D preview_overflow -D compiler_rt $(if $(release),--release )
 SPEC_FLAGS := $(if $(verbose),-v )$(if $(junit_output),--junit_output $(junit_output) )
 CRYSTAL_CONFIG_BUILD_COMMIT := $(shell git rev-parse --short HEAD 2> /dev/null)
 EXPORTS := \
-  $(if $(release),,CRYSTAL_CONFIG_PATH="$(PWD)/src") \
   CRYSTAL_CONFIG_LIBRARY_PATH="$(shell crystal env CRYSTAL_LIBRARY_PATH)" \
   CRYSTAL_CONFIG_BUILD_COMMIT="$(CRYSTAL_CONFIG_BUILD_COMMIT)"
 SHELL = sh
