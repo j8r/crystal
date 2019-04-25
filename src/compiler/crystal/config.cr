@@ -1,7 +1,7 @@
 module Crystal
   module Config
     def self.path
-      {{env("CRYSTAL_CONFIG_PATH") || "src:lib"}}
+      {{env("CRYSTAL_CONFIG_PATH")}} || File.dirname(File.dirname(File.real_path(PROGRAM_NAME))) + "/src/:lib"
     end
 
     def self.version
