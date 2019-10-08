@@ -1,0 +1,55 @@
+---
+kind: pipeline
+name: edge-x86_64
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: build
+  image: amd64/alpine:edge
+  commands:
+  - bin/drone-ci-build.sh
+
+---
+kind: pipeline
+name: edge-aarch64
+
+platform:
+  os: linux
+  arch: arm64
+
+steps:
+- name: build
+  image: arm64v8/alpine:edge
+  commands:
+  - bin/drone-ci-build.sh
+
+#---
+#kind: pipeline
+#name: edge-x86
+
+#platform:
+#  os: linux
+#  arch: amd64
+
+#steps:
+#- name: build
+#  image: i386/alpine:edge
+#  commands:
+#  - bin/drone-ci-build.sh
+
+#---
+#kind: pipeline
+#name: edge-armhf
+
+#platform:
+#  os: linux
+#  arch: arm
+
+#steps:
+#- name: build
+#  image: arm32v7/alpine:edge
+#  commands:
+#  - build.sh
